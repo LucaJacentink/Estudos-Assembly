@@ -69,6 +69,28 @@ segment code
         mov     ax,479
         push        ax
         call        line
+
+        mov     byte[cor],branco_intenso    ;a
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_a]
+        push        ax
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_b]
+        push        ax
+        call        line
+
+        mov     byte[cor],branco_intenso    ;a
+        mov     ax,0
+        push        ax
+        mov     ax,430
+        push        ax
+        mov     ax, 640
+        push        ax
+        mov     ax,430
+        push        ax
+        call        line
         
         
 ;desenha circulos 
@@ -80,6 +102,22 @@ segment code
         mov     ax,10
         push        ax
         call    full_circle
+;escrever uma mensagem
+
+    	mov     	cx,3			;n�mero de caracteres
+    	mov     	bx,0
+    	mov     	dh,1			;linha 0-29
+    	mov     	dl,39			;coluna 0-79
+		mov		byte[cor],branco_intenso
+l4:
+		call	cursor
+    	mov     al,[bx+mens]
+		call	caracter
+    	inc     bx			;proximo caracter
+		inc		dl			;avanca a coluna
+    	loop    l4
+
+
 
 delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
         mov cx, word [velocidade] ; Carrega “velocidade” em cx (contador para loop)
@@ -100,17 +138,18 @@ del1:
         cmp [px], bx
         jz moveesquerda
 
-        mov bx, 10
+        mov bx, 11
         cmp [px], bx
         jz movedireita
 
-        mov bx, 470
+        mov bx, 418
         cmp [py], bx
         jz movebaixo
 
-        mov bx, 10
+        mov bx, 11
         cmp [py], bx
         jz movecima
+
         
 continua:
         mov bx, [vx]
@@ -126,16 +165,15 @@ continua:
         mov     ax,10
         push        ax
         call    full_circle
-        pop cx ; Recupera cx da pilha
-        
-        loop del1 ; No loop del1, cx é decrementado até que volte a ser zero
-        
-        loop del2 ; No loop del2, cx é decrementado até que seja zero
+        call redesenharetangulo
+
+        pop cx 
+        loop del1 
+        loop del2 
         ret
 call delay
 call del1
 call del2
-
 moveesquerda:
     mov bx, -1
     mov [vx], bx
@@ -159,6 +197,35 @@ sai:
         int 10h
         mov ax,4c00h
         int 21h
+
+redesenharetangulo:
+
+        mov     byte[cor],preto    ;a
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_a]
+        push        ax
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_b]
+        push        ax
+        call        line
+
+        mov bx, [v_barra]
+        add [x_porta_a], bx
+        add [x_porta_b], bx
+
+        mov     byte[cor],branco_intenso    ;a
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_a]
+        push        ax
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_b]
+        push        ax
+        call        line
+
 
 
 ;delay
@@ -732,12 +799,15 @@ linha       dw          0
 coluna      dw          0
 deltax      dw      0
 deltay      dw      0   
-mens        db          'duas cervejas'
+mens        db          '0x0'
 velocidade      dw      10
 vx      dw      1
 vy      dw      1
+v_barra dw      1
 px      dw      320
 py      dw      240
+x_porta_a dw 335
+x_porta_b dw 235
 ;*************************************************************************
 segment stack stack
             resb        512
