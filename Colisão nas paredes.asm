@@ -94,7 +94,7 @@ segment code
         
         
 ;desenha circulos 
-        mov     byte[cor],vermelho  ;cabe�a
+        mov     byte[cor],cyan_claro  ;cabe�a
         mov     ax,word[px]
         push        ax
         mov     ax,word[py]
@@ -102,22 +102,104 @@ segment code
         mov     ax,10
         push        ax
         call    full_circle
-;escrever uma mensagem
+;escrever o cabecalho
+    mov     cx,56			;numero de caracteres
+    mov     bx,0
+    mov     dh,1			;linha 0-29
+    mov     dl,3 			;coluna 0-79
+	mov	    byte[cor],branco
 
-    	mov     	cx,3			;n�mero de caracteres
-    	mov     	bx,0
-    	mov     	dh,1			;linha 0-29
-    	mov     	dl,39			;coluna 0-79
-		mov		byte[cor],branco_intenso
-l4:
-		call	cursor
-    	mov     al,[bx+mens]
-		call	caracter
-    	inc     bx			;proximo caracter
-		inc		dl			;avanca a coluna
-    	loop    l4
+escreve1:
+	call    cursor
+    mov     al,[bx+mens1]
+	call    caracter
+    inc     bx	                ;proximo caracter
+	inc 	dl	                ;avanca a coluna
+    loop    escreve1
+
+    mov     cx,56			;numero de caracteres
+    mov     bx,0
+    mov     dh,2			;linha 0-29
+    mov     dl,3			;coluna 0-79
+	mov	   byte[cor],branco
+
+escreve2:
+call    cursor
+    mov     al,[bx+mens2]
+	call    caracter
+    inc     bx	                ;proximo caracter
+	inc  	dl	                ;avanca a coluna
+    loop    escreve2
+	mov	   byte[cor],branco
+velocidade_menos:
+        mov bx, -10
+        mov [v_barra], bx
+        jmp continua
+velocidade_mais:
+        mov bx, 10
+        mov [v_barra], bx
+
+        jmp continua
+redesenharetangulocima:
+
+        mov     byte[cor],preto    ;a
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_a]
+        push        ax
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_b]
+        push        ax
+        call        line
+        mov bx, 418
+        cmp [x_porta_a], bx
+        jle velocidade_mais
+        jmp continua
+     
+redesenharetangulobaixo:
+
+        mov     byte[cor],preto    ;a
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_a]
+        push        ax
+        mov     ax, 20
+        push        ax
+        mov     ax, word[x_porta_b]
+        push        ax
+        call        line
+        mov bx, 11
+        cmp [x_porta_b], bx
+        jge velocidade_menos
+        jmp continua
+compara_cima:
+        mov bx, [x_porta_a]
+        cmp [py], bx
+        jle compara_baixo
+        jmp continua
 
 
+        
+testa_tecla:
+        
+        mov ah, 01h    ;BIOS.TestKey
+        int 16h
+        jz continua
+        mov ah, 00h    ;BIOS.GetKey
+        int 16h
+        cmp al, 27   
+        jz redesenharetangulocima
+        cmp al, 32
+        jz redesenharetangulobaixo
+compara_baixo:
+        mov bx, [x_porta_b]
+        cmp [py], bx
+        jle movedireita
+        jmp continua
+
+       
+        
 
 delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
         mov cx, word [velocidade] ; Carrega “velocidade” em cx (contador para loop)
@@ -125,14 +207,9 @@ del2:
         push cx ; Coloca cx na pilha para usa-lo em outro loop
         mov cx, 0800h ; Teste modificando este valor
 del1:
-        mov     byte[cor],preto ;cabe�a
-        mov     ax,[px]
-        push        ax
-        mov     ax,[py]
-        push        ax
-        mov     ax,10
-        push        ax
-        call    full_circle
+        
+        
+       
 
         mov bx, 629
         cmp [px], bx
@@ -150,38 +227,45 @@ del1:
         cmp [py], bx
         jz movecima
 
+        mov bx, 0
+        mov [v_barra], bx
+        call testa_tecla
+
+        
+
         
 continua:
-        mov bx, [vx]
-        add [px], bx
-        mov bx, [vy]
-        add [py], bx
-
-        mov     byte[cor],cyan_claro    ;cabe�a
-        mov     ax,[px]
+        call apagacirculo
+        mov bx, [v_barra]
+        add [x_porta_a], bx
+        add [x_porta_b], bx
+        mov     byte[cor],branco_intenso    ;a
+        mov     ax, 20
         push        ax
-        mov     ax,[py]
+        mov     ax, word[x_porta_a]
         push        ax
-        mov     ax,10
+        mov     ax, 20
         push        ax
-        call    full_circle
-        call redesenharetangulo
-
-        pop cx 
+        mov     ax, word[x_porta_b]
+        push        ax
+        call        line
+       
+        pop cx
         loop del1 
         loop del2 
         ret
 call delay
 call del1
 call del2
-moveesquerda:
-    mov bx, -1
-    mov [vx], bx
-    jmp continua
 movedireita:
     mov bx, 1
     mov [vx], bx
     jmp continua
+moveesquerda:
+    mov bx, -1
+    mov [vx], bx
+    jmp continua
+
 movebaixo:
     mov bx, -1
     mov [vy], bx
@@ -198,34 +282,28 @@ sai:
         mov ax,4c00h
         int 21h
 
-redesenharetangulo:
 
-        mov     byte[cor],preto    ;a
-        mov     ax, 20
+apagacirculo:
+        mov     byte[cor],preto ;cabe�a
+        mov     ax,[px]
         push        ax
-        mov     ax, word[x_porta_a]
+        mov     ax,[py]
         push        ax
-        mov     ax, 20
+        mov     ax,10
         push        ax
-        mov     ax, word[x_porta_b]
+        call    full_circle
+        mov bx, [vx]
+        add [px], bx
+        mov bx, [vy]
+        add [py], bx
+        mov     byte[cor],cyan_claro    ;cabe�a
+        mov     ax,[px]
         push        ax
-        call        line
-
-        mov bx, [v_barra]
-        add [x_porta_a], bx
-        add [x_porta_b], bx
-
-        mov     byte[cor],branco_intenso    ;a
-        mov     ax, 20
+        mov     ax,[py]
         push        ax
-        mov     ax, word[x_porta_a]
+        mov     ax,10
         push        ax
-        mov     ax, 20
-        push        ax
-        mov     ax, word[x_porta_b]
-        push        ax
-        call        line
-
+        call    full_circle
 
 
 ;delay
@@ -798,13 +876,14 @@ modo_anterior   db      0
 linha       dw          0
 coluna      dw          0
 deltax      dw      0
-deltay      dw      0   
-mens        db          '0x0'
+deltay      dw      0           
+mens1           db      'Exercicio de Programacao de Sistemas Embarcados 1 2023/2'
+mens2           db      'Luca Jacentink  00 x 00 Computador      Velocidade (1/3)'
 velocidade      dw      10
 vx      dw      1
 vy      dw      1
-v_barra dw      1
-px      dw      320
+v_barra dw      0
+px      dw      400
 py      dw      240
 x_porta_a dw 335
 x_porta_b dw 235
