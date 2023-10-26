@@ -20,50 +20,7 @@ segment code
 
 ;desenhar retas
 
-        mov     byte[cor],branco_intenso    ;baixo
-        mov     ax,0
-        push        ax
-        mov     ax,0
-        push        ax
-        mov     ax,639
-        push        ax
-        mov     ax,0
-        push        ax
-        call        line
-
-
-        mov     byte[cor],branco_intenso    ;esquerda
-        mov     ax,0
-        push        ax
-        mov     ax,0
-        push        ax
-        mov     ax,0
-        push        ax
-        mov     ax,479
-        push        ax
-        call        line
-
-        mov     byte[cor],branco_intenso    ;cima
-        mov     ax,0
-        push        ax
-        mov     ax,479
-        push        ax
-        mov     ax,639
-        push        ax
-        mov     ax,479
-        push        ax
-        call        line
-
-        mov     byte[cor],branco_intenso    ;direita
-        mov     ax,639
-        push        ax
-        mov     ax,0
-        push        ax
-        mov     ax,639
-        push        ax
-        mov     ax,479
-        push        ax
-        call        line
+     
 
         mov     byte[cor],branco_intenso    ;raquete
         mov     ax, 600
@@ -182,23 +139,23 @@ diminuivelocidade:
         mov bx, -1
         add[vx], bx
         add[vy], bx
-        jmp continua
+        call continua
 aumentavelocidade:
         mov bx, 1
         add[vx], bx
         add[vy], bx
-        jmp continua
+        call continua
 
 
         
 testa_tecla:
         mov ah, 08H ;Ler caracter da STDIN
         int 21H
-        cmp al, 'w' ;
+        cmp al, 'c' ;
         jz redesenharetangulocima
-        cmp al, 's'
+        cmp al, 'b'
         jz redesenharetangulobaixo
-        cmp al, 'q'
+        cmp al, 's'
         jz sai
         cmp al, 'm'
         jz diminuivelocidade
@@ -211,40 +168,31 @@ compara_cima:
         mov bx, [x_porta_a]
         cmp [py], bx
         jle compara_baixo
-        jmp continua
+        call continua
 compara_baixo:
         mov bx, [x_porta_b]
         cmp [py], bx
-        jle continua
-        call moveesquerda
+        jge moveesquerda
+        call continua
         
 
-delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
-        mov ah, 86h    ; Função 86h - Esperar por um período
-        mov cx, [tempo] ; Carregue o tempo desejado em CX
-        int 15h        ; Chame a interrupção 0x15
-        ret
-del2:
-        push cx ; Coloca cx na pilha para usa-lo em outro loop
-        mov cx, 0800h ; Teste modificando este valor
-del1:
-        
 
-        mov bx, 629
+del1:  
+
+        mov bx, 630
         cmp [px], bx
         jz moveesquerda
-        
 
-        mov bx, 11
+        mov bx, 10
         cmp [px], bx
         jz movedireita
 
 
-        mov bx, 418
+        mov bx, 410
         cmp [py], bx
         jz movebaixo
 
-        mov bx, 11
+        mov bx, 10
         cmp [py], bx
         jz movecima
 
@@ -255,11 +203,17 @@ del1:
         cmp al, 0
         jne testa_tecla
 
-        mov bx, 595
+        mov bx, 590
         cmp [px], bx
-        jne continua
-        call compara_cima    
+        je compara_cima
+        call continua  
+moveesquerda:
+    mov bx, -10
+    mov [vx], bx
+    call continua
+
 continua:
+        call delay
         call apagacirculo
         mov bx, [v_barra]
         add [x_porta_a], bx
@@ -279,26 +233,20 @@ continua:
         loop del1 
         loop del2 
         ret
-call delay
-call del1
-call del2
+
 movedireita:
-    mov bx, 1
+    mov bx, 10
     mov [vx], bx
-    jmp continua
-moveesquerda:
-    mov bx, -1
-    mov [vx], bx
-    jmp continua
+    call continua
 
 movebaixo:
-    mov bx, -1
+    mov bx, -10
     mov [vy], bx
-    jmp continua
+    call continua
 movecima:
-    mov bx, 1
+    mov bx, 10
     mov [vy], bx
-    jmp continua
+    call continua
 
 
 apagacirculo:
@@ -322,7 +270,14 @@ apagacirculo:
         mov     ax,10
         push        ax
         call    full_circle
-
+delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
+        mov ah, 86h    ; Função 86h - Esperar por um período
+        mov cx, [tempo] ; Carregue o tempo desejado em CX
+        int 15h        ; Chame a interrupção 0x15
+        ret
+del2:
+        push cx ; Coloca cx na pilha para usa-lo em outro loop
+        mov cx, 1000 ; Teste modificando este valor
 
 ;delay
 ;
@@ -896,9 +851,9 @@ mensagem2           db      'Luca Jacentink  00 x 00 Computador      Velocidade 
 PontuacaoLuca           dw      0
 PontuacaoComputador     dw      0
 velocidade      dw      30
-tempo           dw      100000000
-vx      dw      1
-vy      dw      1
+tempo           dw      1
+vx      dw      10
+vy      dw      10
 v_barra dw      0
 px      dw      400
 py      dw      240
