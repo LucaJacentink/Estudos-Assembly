@@ -1,7 +1,5 @@
-; vers�o de 10/05/2007
-; corrigido erro de arredondamento na rotina line.
-; circle e full_circle disponibilizados por Jefferson Moro em 10/2009
-;
+; Luca Jacentink Gonçalves
+; Sistemas embarcados turma x
 segment code
 ..start:
             mov         ax,data
@@ -67,31 +65,31 @@ segment code
         push        ax
         call        line
 
-        mov     byte[cor],branco_intenso    ;a
-        mov     ax, 20
+        mov     byte[cor],branco_intenso    ;raquete
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_a]
         push        ax
-        mov     ax, 20
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_b]
         push        ax
         call        line
 
-        mov     byte[cor],branco_intenso    ;a
-        mov     ax,0
+        mov     byte[cor],branco_intenso    ;linha cabeçalho
+        mov     ax, 0
         push        ax
-        mov     ax,430
+        mov     ax, 430
         push        ax
         mov     ax, 640
         push        ax
-        mov     ax,430
+        mov     ax, 430
         push        ax
-        call        line
-        
+        call        line 
+
         
 ;desenha circulos 
-        mov     byte[cor],cyan_claro  ;cabe�a
+        mov     byte[cor],cyan_claro  ;cabeça
         mov     ax,word[px]
         push        ax
         mov     ax,word[py]
@@ -99,7 +97,7 @@ segment code
         mov     ax,10
         push        ax
         call    full_circle
-;escrever o cabecalho
+;cabeçalho
     mov     cx,56			;numero de caracteres
     mov     bx,0
     mov     dh,1			;linha 0-29
@@ -108,7 +106,7 @@ segment code
 
 escreve1:
 	call    cursor
-    mov     al,[bx+mens1]
+    mov     al,[bx+mensagem1]
 	call    caracter
     inc     bx	                ;proximo caracter
 	inc 	dl	                ;avanca a coluna
@@ -121,21 +119,12 @@ escreve1:
 	mov	   byte[cor],branco
 escreve2:
 call    cursor
-    mov     al,[bx+mens2]
+    mov     al,[bx+mensagem2]
 	call    caracter
     inc     bx	                ;proximo caracter
 	inc  	dl	                ;avanca a coluna
     loop    escreve2
 	mov	   byte[cor],branco
-
-
-
-
-
-
-
-
-
 
 
 
@@ -152,11 +141,11 @@ velocidade_mais:
 redesenharetangulocima:
 
         mov     byte[cor],preto    ;a
-        mov     ax, 20
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_a]
         push        ax
-        mov     ax, 20
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_b]
         push        ax
@@ -169,11 +158,11 @@ redesenharetangulocima:
 redesenharetangulobaixo:
 
         mov     byte[cor],preto    ;a
-        mov     ax, 20
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_a]
         push        ax
-        mov     ax, 20
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_b]
         push        ax
@@ -227,11 +216,14 @@ compara_baixo:
         mov bx, [x_porta_b]
         cmp [py], bx
         jle continua
-        call movedireita
+        call moveesquerda
         
 
 delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
-        mov cx, word [velocidade] ; Carrega “velocidade” em cx (contador para loop)
+        mov ah, 86h    ; Função 86h - Esperar por um período
+        mov cx, [tempo] ; Carregue o tempo desejado em CX
+        int 15h        ; Chame a interrupção 0x15
+        ret
 del2:
         push cx ; Coloca cx na pilha para usa-lo em outro loop
         mov cx, 0800h ; Teste modificando este valor
@@ -246,9 +238,7 @@ del1:
         mov bx, 11
         cmp [px], bx
         jz movedireita
-        
-  
-     
+
 
         mov bx, 418
         cmp [py], bx
@@ -265,7 +255,7 @@ del1:
         cmp al, 0
         jne testa_tecla
 
-        mov bx, 25
+        mov bx, 595
         cmp [px], bx
         jne continua
         call compara_cima    
@@ -275,11 +265,11 @@ continua:
         add [x_porta_a], bx
         add [x_porta_b], bx
         mov     byte[cor],branco_intenso    ;a
-        mov     ax, 20
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_a]
         push        ax
-        mov     ax, 20
+        mov     ax, 600
         push        ax
         mov     ax, word[x_porta_b]
         push        ax
@@ -336,7 +326,7 @@ apagacirculo:
 
 ;delay
 ;
-;   fun��o cursor
+;   função cursor
 ;
 ; dh = linha (0-29) e  dl=coluna  (0-79)
 cursor:
@@ -894,21 +884,26 @@ magenta_claro   equ     13
 amarelo     equ     14
 branco_intenso  equ     15
 
+
+
 modo_anterior   db      0
 linha       dw          0
 coluna      dw          0
 deltax      dw      0
 deltay      dw      0           
-mens1           db      'Exercicio de Programacao de Sistemas Embarcados 1 2023/2'
-mens2           db      'Luca Jacentink  00 x 00 Computador      Velocidade (1/3)'
-velocidade      dw      10
+mensagem1           db      'Exercicio de Programacao de Sistemas Embarcados 1 2023/2'
+mensagem2           db      'Luca Jacentink  00 x 00 Computador      Velocidade (1/3)'
+PontuacaoLuca           dw      0
+PontuacaoComputador     dw      0
+velocidade      dw      30
+tempo           dw      100000000
 vx      dw      1
 vy      dw      1
 v_barra dw      0
 px      dw      400
 py      dw      240
 x_porta_a dw 335
-x_porta_b dw 235
+x_porta_b dw 285
 ;*************************************************************************
 segment stack stack
             resb        512
