@@ -131,6 +131,7 @@ call    cursor
 	inc  	dl	                ;avanca a coluna
     loop    escreve2
 	mov	   byte[cor],branco
+
 velocidade_menos:
         mov bx, -10
         mov [v_barra], bx
@@ -173,32 +174,52 @@ redesenharetangulobaixo:
         cmp [x_porta_b], bx
         jge velocidade_menos
         jmp continua
-compara_cima:
-        mov bx, [x_porta_a]
-        cmp [py], bx
-        jle compara_baixo
+sai:
+        mov ah,0 ; set video mode
+        mov al,[modo_anterior] ; recupera o modo anterior
+        int 10h
+        mov ax,4c00h
+        int 21h
+
+diminuivelocidade:
+        mov bx, -1
+        add[vx], bx
+        add[vy], bx
+        jmp continua
+aumentavelocidade:
+        mov bx, 1
+        add[vx], bx
+        add[vy], bx
         jmp continua
 
 
         
 testa_tecla:
-        
-        mov ah, 01h    ;BIOS.TestKey
-        int 16h
-        jz continua
-        mov ah, 00h    ;BIOS.GetKey
-        int 16h
-        cmp al, 27   
+        mov ah, 08H ;Ler caracter da STDIN
+        int 21H
+        cmp al, 'w' ;
         jz redesenharetangulocima
-        cmp al, 32
+        cmp al, 's'
         jz redesenharetangulobaixo
+        cmp al, 'q'
+        jz sai
+        cmp al, 'm'
+        jz diminuivelocidade
+        cmp al, 'p'
+        jz aumentavelocidade
+
+
+
+compara_cima:
+        mov bx, [x_porta_a]
+        cmp [py], bx
+        jle compara_baixo
+        jmp continua
 compara_baixo:
         mov bx, [x_porta_b]
         cmp [py], bx
         jle movedireita
         jmp continua
-
-       
         
 
 delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
@@ -229,7 +250,11 @@ del1:
 
         mov bx, 0
         mov [v_barra], bx
-        call testa_tecla
+        mov ah, 0bh    ;BIOS.TestKey
+        int 21h
+        cmp al, 0
+        jne testa_tecla
+        jmp continua
 
         
 
@@ -274,13 +299,6 @@ movecima:
     mov bx, 1
     mov [vy], bx
     jmp continua
-
-sai:
-        mov ah,0 ; set video mode
-        mov al,[modo_anterior] ; recupera o modo anterior
-        int 10h
-        mov ax,4c00h
-        int 21h
 
 
 apagacirculo:
