@@ -20,9 +20,6 @@ segment code
         mov         ah,0
         int         10h
 
-
-        
-
 ;desenhar retas
 
         mov     byte[cor],branco_intenso    ;baixo
@@ -122,7 +119,6 @@ escreve1:
     mov     dh,2			;linha 0-29
     mov     dl,3			;coluna 0-79
 	mov	   byte[cor],branco
-
 escreve2:
 call    cursor
     mov     al,[bx+mens2]
@@ -131,6 +127,18 @@ call    cursor
 	inc  	dl	                ;avanca a coluna
     loop    escreve2
 	mov	   byte[cor],branco
+
+
+
+
+
+
+
+
+
+
+
+
 
 velocidade_menos:
         mov bx, -10
@@ -218,8 +226,8 @@ compara_cima:
 compara_baixo:
         mov bx, [x_porta_b]
         cmp [py], bx
-        jle movedireita
-        jmp continua
+        jle continua
+        call movedireita
         
 
 delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
@@ -229,16 +237,18 @@ del2:
         mov cx, 0800h ; Teste modificando este valor
 del1:
         
-        
-       
 
         mov bx, 629
         cmp [px], bx
         jz moveesquerda
+        
 
         mov bx, 11
         cmp [px], bx
         jz movedireita
+        
+  
+     
 
         mov bx, 418
         cmp [py], bx
@@ -254,11 +264,11 @@ del1:
         int 21h
         cmp al, 0
         jne testa_tecla
-        jmp continua
 
-        
-
-        
+        mov bx, 25
+        cmp [px], bx
+        jne continua
+        call compara_cima    
 continua:
         call apagacirculo
         mov bx, [v_barra]
@@ -325,12 +335,6 @@ apagacirculo:
 
 
 ;delay
-
-
-
-
-    
-;***************************************************************************
 ;
 ;   fun��o cursor
 ;
