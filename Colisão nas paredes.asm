@@ -62,26 +62,26 @@ segment code
 	mov	    byte[cor],branco
 
 escreve1:
-	call    cursor
-    mov     al,[bx+mensagem1]
-	call    caracter
-    inc     bx	                ;proximo caracter
-	inc 	dl	                ;avanca a coluna
-    loop    escreve1
+        call    cursor
+        mov     al,[bx+linha1]
+        call    caracter
+        inc     bx	                ;proximo caracter
+        inc 	dl	                ;avanca a coluna
+        loop    escreve1
 
-    mov     cx,56			;numero de caracteres
-    mov     bx,0
-    mov     dh,2			;linha 0-29
-    mov     dl,3			;coluna 0-79
-	mov	   byte[cor],branco
+        mov     cx,56			;numero de caracteres
+        mov     bx,0
+        mov     dh,2			;linha 0-29
+        mov     dl,3			;coluna 0-79
+        mov	   byte[cor],branco
 escreve2:
-call    cursor
-    mov     al,[bx+mensagem2]
-	call    caracter
-    inc     bx	                ;proximo caracter
-	inc  	dl	                ;avanca a coluna
-    loop    escreve2
-	mov	   byte[cor],branco
+        call    cursor
+        mov     al,[bx+linha2]
+        call    caracter
+        inc     bx	                ;proximo caracter
+        inc  	dl	                ;avanca a coluna
+        loop    escreve2
+        mov	   byte[cor],branco
 
 
 
@@ -132,13 +132,13 @@ redesenharetangulobaixo:
 
 diminuivelocidade:
         call calcula_modulo
-        cmp ax, 8
-        jge divide
+        cmp ax, 1 
+        jg divide
         call continua
 aumentavelocidade:
         call calcula_modulo
-        cmp ax, 24
-        jle multiplica
+        cmp ax, 4
+        jl multiplica
         call continua
 
         
@@ -165,9 +165,9 @@ divide:
         mov ax, [vy]     ; Carrega o valor de vy em ax
         sar ax, 1        ; Divide ax por 2 (shift right)
         mov [vy], ax     ; Armazena o resultado de volta em vy
-
+        add word[velocidade], -1
         pop ax
-
+        call setastrvelocidade
 multiplica:
         push ax
         mov ax, 2
@@ -177,8 +177,11 @@ multiplica:
         mov ax, 2
         mul word[vy]
         mov word[vy],ax
+
+        add word[velocidade], 1
         pop ax
-        call continua
+
+        call setastrvelocidade
 
 
 sai:
@@ -188,7 +191,7 @@ sai:
         mov ax,4c00h
         int 21h
 
-del1:  
+testecolisao:  
         mov bx, 0
         mov [v_barra], bx
         mov ah, 0bh    ;BIOS.TestKey
@@ -209,11 +212,10 @@ del1:
         cmp [py], bx
         jge movebaixo
 
-        mov bx, 25
+        mov bx, 20
         cmp [py], bx
         jle movecima
 
-       
 
         mov bx, 600
         cmp [px], bx
@@ -221,8 +223,9 @@ del1:
         call continua  
 
 moveesquerda:
+    add word[PontuacaoComputador], 1    
     neg word [vx]
-    call continua
+    call setapontoscomp
 
 movedireita:
     neg word [vx] 
@@ -243,8 +246,15 @@ compara_cima:
 compara_baixo:
         mov bx, [x_porta_b]
         cmp [py], bx
-        jge moveesquerda
+        jge colidiu_barra
         call continua
+
+colidiu_barra:
+        add word[PontuacaoLuca], 1 
+        neg word[vx]
+        call setapontosluca
+
+
 calcula_modulo:
     mov ax, [vx]    ; Carrega o valor de vx em ax
     test ax, ax     ; Testa o sinal do valor em ax
@@ -296,60 +306,72 @@ continua:
         push        ax
         call        line 
         pop cx
-        call del1 
+        call testecolisao
         loop continua 
         ret
 
 escrevepontosluca:
-call setapontosluca
-call    cursor
-    mov     al,[bx+PontuacaoLucastr]
-	call    caracter
-    inc     bx	                ;proximo caracter
-	inc  	dl	                ;avanca a coluna
-
-    loop    escrevepontosluca
-    call moveesquerda
-
+        call    cursor
+        mov     al,[bx+PontuacaoLucastr]
+        call    caracter
+        inc     bx	                ;proximo caracter
+        inc  	dl	                ;avanca a coluna
+        loop    escrevepontosluca
+        ret
 setapontosluca:
         mov ax, 0
         mov al, byte[PontuacaoLuca] 
         add al,30h                       
         mov [PontuacaoLucastr],al
-        mov     cx,2		;numero de caracteres
+        mov     cx,1		;numero de caracteres
         mov     bx,0
-        mov     dh,1			;linha 0-29
-        mov     dl,18			;coluna 0-79
+        mov     dh,2			;linha 0-29
+        mov     dl,20			;coluna 0-79
         mov	   byte[cor],branco
+        call escrevepontosluca
+        call continua
 escrevepontoscomp:
-        call setapontoscomp
+
         call    cursor
         mov     al,[bx+PontuacaoComputadorstr]
-                call    caracter
+        call    caracter
         inc     bx	                ;proximo caracter
-                inc  	dl	                ;avanca a coluna
-        loop    escrevepontoscomp   
+        inc  	dl	                ;avanca a coluna
+        loop    escrevepontoscomp 
+        ret  
 setapontoscomp:
-        mov     cx,2		;numero de caracteres
+        mov ax, 0
+        mov al, byte[PontuacaoComputador] 
+        add al,30h                       
+        mov [PontuacaoComputadorstr],al
+        mov     cx,1		;numero de caracteres
         mov     bx,0
-        mov     dh,1			;linha 0-29
-        mov     dl,23			;coluna 0-79
+        mov     dh,2			;linha 0-29
+        mov     dl,25			;coluna 0-79
         mov	   byte[cor],branco
+        call escrevepontosluca
+        call continua
 
 escrevevelocidade:
-        call setastrvelocidade
         call    cursor
         mov     al,[bx+velocidadestr]
-                call    caracter
+        call    caracter
         inc     bx	                ;proximo caracter
-                inc  	dl	                ;avanca a coluna
+        inc  	dl	                ;avanca a coluna
         loop    escrevevelocidade  
+        ret
 setastrvelocidade:
+        mov ax, 0
+        mov al, byte[velocidade] 
+        add al,30h                       
+        mov [velocidadestr],al
         mov     cx,1		;numero de caracteres
         mov     bx,0
         mov     dh,2			;linha 0-29
         mov     dl,55			;coluna 0-79
         mov	   byte[cor],branco
+        call escrevevelocidade
+        call continua
 
 ;delay
 ;
@@ -918,17 +940,17 @@ linha       dw          0
 coluna      dw          0
 deltax      dw      0
 deltay      dw      0           
-mensagem1           db      'Exercicio de Programacao de Sistemas Embarcados 1 2023/2'
-mensagem2           db      'Luca Jacentink  00 x 00 Computador      Velocidade (1/3)'
+linha1           db      'Exercicio de Programacao de Sistemas Embarcados 1 2023/2'
+linha2           db      'Luca Jacentink  00 x 00 Computador      Velocidade (1/3)'
 PontuacaoLuca           dw      0
 PontuacaoComputador     dw      0
 PontuacaoComputadorstr db '0'
-PontuacaoLucarstr db '0'
+PontuacaoLucastr db '0'
 velocidadestr db '1'
 velocidade      dw      1
 tempo           dw      1
-vx      dw      8
-vy      dw      8
+vx      dw      1
+vy      dw      1
 v_barra dw      0
 px      dw      400
 py      dw      240
