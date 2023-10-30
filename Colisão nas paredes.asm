@@ -86,15 +86,15 @@ call    cursor
 
 
 
-velocidade_menos:
-        mov bx, -10
-        mov [v_barra], bx
-        jmp continua
 velocidade_mais:
         mov bx, 10
         mov [v_barra], bx
+        call continua
 
-        jmp continua
+velocidade_menos:
+        mov bx, -10
+        mov [v_barra], bx
+        call continua
 redesenharetangulocima:
 
         mov     byte[cor],preto    ;a
@@ -110,7 +110,7 @@ redesenharetangulocima:
         mov bx, 418
         cmp [x_porta_a], bx
         jle velocidade_mais
-        jmp continua
+        call continua
      
 redesenharetangulobaixo:
 
@@ -127,25 +127,19 @@ redesenharetangulobaixo:
         mov bx, 11
         cmp [x_porta_b], bx
         jge velocidade_menos
-        jmp continua
-sai:
-        mov ah,0 ; set video mode
-        mov al,[modo_anterior] ; recupera o modo anterior
-        int 10h
-        mov ax,4c00h
-        int 21h
+        call continua
+
 
 diminuivelocidade:
-        mov bx, -1
-        add[vx], bx
-        add[vy], bx
+        call calcula_modulo
+        cmp ax, 8
+        jge divide
         call continua
 aumentavelocidade:
-        mov bx, 1
-        add[vx], bx
-        add[vy], bx
+        call calcula_modulo
+        cmp ax, 24
+        jle multiplica
         call continua
-
 
         
 testa_tecla:
@@ -161,9 +155,86 @@ testa_tecla:
         jz diminuivelocidade
         cmp al, 'p'
         jz aumentavelocidade
+divide:
+        push ax
+
+        mov ax, [vx]     ; Carrega o valor de vx em ax
+        sar ax, 1        ; Divide ax por 2 (shift right)
+        mov [vx], ax     ; Armazena o resultado de volta em vx
+
+        mov ax, [vy]     ; Carrega o valor de vy em ax
+        sar ax, 1        ; Divide ax por 2 (shift right)
+        mov [vy], ax     ; Armazena o resultado de volta em vy
+
+        pop ax
+
+multiplica:
+        push ax
+        mov ax, 2
+        mul word[vx]
+        mov word[vx],ax
+
+        mov ax, 2
+        mul word[vy]
+        mov word[vy],ax
+        pop ax
+        call continua
 
 
+sai:
+        mov ah,0 ; set video mode
+        mov al,[modo_anterior] ; recupera o modo anterior
+        int 10h
+        mov ax,4c00h
+        int 21h
 
+del1:  
+        mov bx, 0
+        mov [v_barra], bx
+        mov ah, 0bh    ;BIOS.TestKey
+        int 21h
+        cmp al, 0
+        jne testa_tecla
+
+        mov bx, 620
+        cmp [px], bx
+        jge moveesquerda
+
+        mov bx, 20
+        cmp [px], bx
+        jle movedireita
+
+
+        mov bx, 400
+        cmp [py], bx
+        jge movebaixo
+
+        mov bx, 25
+        cmp [py], bx
+        jle movecima
+
+       
+
+        mov bx, 600
+        cmp [px], bx
+        je compara_cima
+        call continua  
+
+moveesquerda:
+    neg word [vx]
+    call continua
+
+movedireita:
+    neg word [vx] 
+    call continua
+
+movebaixo:
+    neg word [vy]
+    call continua
+movecima:
+    neg word [vy]
+    call continua
+    
 compara_cima:
         mov bx, [x_porta_a]
         cmp [py], bx
@@ -174,81 +245,13 @@ compara_baixo:
         cmp [py], bx
         jge moveesquerda
         call continua
-        
-
-
-del1:  
-
-        mov bx, 630
-        cmp [px], bx
-        jz moveesquerda
-
-        mov bx, 10
-        cmp [px], bx
-        jz movedireita
-
-
-        mov bx, 410
-        cmp [py], bx
-        jz movebaixo
-
-        mov bx, 10
-        cmp [py], bx
-        jz movecima
-
-        mov bx, 0
-        mov [v_barra], bx
-        mov ah, 0bh    ;BIOS.TestKey
-        int 21h
-        cmp al, 0
-        jne testa_tecla
-
-        mov bx, 590
-        cmp [px], bx
-        je compara_cima
-        call continua  
-moveesquerda:
-    mov bx, -10
-    mov [vx], bx
-    call continua
-
-continua:
-        call delay
-        call apagacirculo
-        mov bx, [v_barra]
-        add [x_porta_a], bx
-        add [x_porta_b], bx
-        mov     byte[cor],branco_intenso    ;a
-        mov     ax, 600
-        push        ax
-        mov     ax, word[x_porta_a]
-        push        ax
-        mov     ax, 600
-        push        ax
-        mov     ax, word[x_porta_b]
-        push        ax
-        call        line
-       
-        pop cx
-        loop del1 
-        loop del2 
-        ret
-
-movedireita:
-    mov bx, 10
-    mov [vx], bx
-    call continua
-
-movebaixo:
-    mov bx, -10
-    mov [vy], bx
-    call continua
-movecima:
-    mov bx, 10
-    mov [vy], bx
-    call continua
-
-
+calcula_modulo:
+    mov ax, [vx]    ; Carrega o valor de vx em ax
+    test ax, ax     ; Testa o sinal do valor em ax
+    jns skip_abs    ; Pula para skip_abs se o valor for não-negativo
+    neg ax          ; Inverte o sinal do valor em ax
+skip_abs:
+    ret
 apagacirculo:
         mov     byte[cor],preto ;cabe�a
         mov     ax,[px]
@@ -271,13 +274,82 @@ apagacirculo:
         push        ax
         call    full_circle
 delay: ; Esteja atento pois talvez seja importante salvar contexto (no caso, CX, o que NÃO foi feito aqui).
+        mov ax,0
         mov ah, 86h    ; Função 86h - Esperar por um período
         mov cx, [tempo] ; Carregue o tempo desejado em CX
         int 15h        ; Chame a interrupção 0x15
         ret
-del2:
-        push cx ; Coloca cx na pilha para usa-lo em outro loop
-        mov cx, 1000 ; Teste modificando este valor
+continua:
+        call delay
+        call apagacirculo
+        mov bx, [v_barra]
+        add [x_porta_a], bx
+        add [x_porta_b], bx
+        mov     byte[cor],branco_intenso    ;a
+        mov     ax, 600
+        push        ax
+        mov     ax, word[x_porta_a]
+        push        ax
+        mov     ax, 600
+        push        ax
+        mov     ax, word[x_porta_b]
+        push        ax
+        call        line 
+        pop cx
+        call del1 
+        loop continua 
+        ret
+
+escrevepontosluca:
+call setapontosluca
+call    cursor
+    mov     al,[bx+PontuacaoLucastr]
+	call    caracter
+    inc     bx	                ;proximo caracter
+	inc  	dl	                ;avanca a coluna
+
+    loop    escrevepontosluca
+    call moveesquerda
+
+setapontosluca:
+        mov ax, 0
+        mov al, byte[PontuacaoLuca] 
+        add al,30h                       
+        mov [PontuacaoLucastr],al
+        mov     cx,2		;numero de caracteres
+        mov     bx,0
+        mov     dh,1			;linha 0-29
+        mov     dl,18			;coluna 0-79
+        mov	   byte[cor],branco
+escrevepontoscomp:
+        call setapontoscomp
+        call    cursor
+        mov     al,[bx+PontuacaoComputadorstr]
+                call    caracter
+        inc     bx	                ;proximo caracter
+                inc  	dl	                ;avanca a coluna
+        loop    escrevepontoscomp   
+setapontoscomp:
+        mov     cx,2		;numero de caracteres
+        mov     bx,0
+        mov     dh,1			;linha 0-29
+        mov     dl,23			;coluna 0-79
+        mov	   byte[cor],branco
+
+escrevevelocidade:
+        call setastrvelocidade
+        call    cursor
+        mov     al,[bx+velocidadestr]
+                call    caracter
+        inc     bx	                ;proximo caracter
+                inc  	dl	                ;avanca a coluna
+        loop    escrevevelocidade  
+setastrvelocidade:
+        mov     cx,1		;numero de caracteres
+        mov     bx,0
+        mov     dh,2			;linha 0-29
+        mov     dl,55			;coluna 0-79
+        mov	   byte[cor],branco
 
 ;delay
 ;
@@ -850,10 +922,13 @@ mensagem1           db      'Exercicio de Programacao de Sistemas Embarcados 1 2
 mensagem2           db      'Luca Jacentink  00 x 00 Computador      Velocidade (1/3)'
 PontuacaoLuca           dw      0
 PontuacaoComputador     dw      0
-velocidade      dw      30
+PontuacaoComputadorstr db '0'
+PontuacaoLucarstr db '0'
+velocidadestr db '1'
+velocidade      dw      1
 tempo           dw      1
-vx      dw      10
-vy      dw      10
+vx      dw      8
+vy      dw      8
 v_barra dw      0
 px      dw      400
 py      dw      240
