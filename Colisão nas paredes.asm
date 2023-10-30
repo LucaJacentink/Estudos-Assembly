@@ -217,13 +217,12 @@ testecolisao:
         jle movecima
 
 
-        mov bx, 600
+        mov bx, 598
         cmp [px], bx
-        je compara_cima
+        jge compara_cima
         call continua  
 
-moveesquerda:
-    add word[PontuacaoComputador], 1    
+moveesquerda:   
     neg word [vx]
     call setapontoscomp
 
@@ -250,7 +249,6 @@ compara_baixo:
         call continua
 
 colidiu_barra:
-        add word[PontuacaoLuca], 1 
         neg word[vx]
         call setapontosluca
 
@@ -319,6 +317,9 @@ escrevepontosluca:
         loop    escrevepontosluca
         ret
 setapontosluca:
+        add word[PontuacaoLuca], 1 
+        cmp word[PontuacaoLuca], 10
+        jz setapontoslucadezena
         mov ax, 0
         mov al, byte[PontuacaoLuca] 
         add al,30h                       
@@ -327,9 +328,35 @@ setapontosluca:
         mov     bx,0
         mov     dh,2			;linha 0-29
         mov     dl,20			;coluna 0-79
-        mov	   byte[cor],branco
+        mov	   byte[cor], magenta
         call escrevepontosluca
         call continua
+
+escrevepontoslucadezena:
+        call    cursor
+        mov     al,[bx+PontuacaoLucadezenastr]
+        call    caracter
+        inc     bx	                ;proximo caracter
+        inc  	dl	                ;avanca a coluna
+        loop    escrevepontoslucadezena
+        ret
+setapontoslucadezena:
+        mov word[PontuacaoLuca], 0
+        add word[PontuacaoLucadezena], 1 
+        mov ax, 0
+        mov al, byte[PontuacaoLucadezena] 
+        add al,30h                       
+        mov [PontuacaoLucadezenastr],al
+        mov     cx,1		;numero de caracteres
+        mov     bx,0
+        mov     dh,2			;linha 0-29
+        mov     dl,19			;coluna 0-79
+        mov	   byte[cor], magenta
+        call escrevepontoslucadezena
+        cmp word[PontuacaoLuca], 10
+        jz teste_pracabarluca
+        call continua
+
 escrevepontoscomp:
 
         call    cursor
@@ -340,6 +367,9 @@ escrevepontoscomp:
         loop    escrevepontoscomp 
         ret  
 setapontoscomp:
+        add word[PontuacaoComputador], 1
+        cmp word[PontuacaoComputador], 10
+        jz setapontoscompdezena
         mov ax, 0
         mov al, byte[PontuacaoComputador] 
         add al,30h                       
@@ -348,8 +378,35 @@ setapontoscomp:
         mov     bx,0
         mov     dh,2			;linha 0-29
         mov     dl,25			;coluna 0-79
-        mov	   byte[cor],branco
-        call escrevepontosluca
+        mov	   byte[cor], magenta
+        call escrevepontoscomp
+        call continua
+teste_pracabarluca:
+        call sai
+escrevepontoscompdezena:
+
+        call    cursor
+        mov     al,[bx+PontuacaoComputadordezenastr]
+        call    caracter
+        inc     bx	                ;proximo caracter
+        inc  	dl	                ;avanca a coluna
+        loop    escrevepontoscompdezena
+        ret  
+setapontoscompdezena:
+        mov word[PontuacaoComputador], 0
+        add word[PontuacaoComputadordezena], 1
+        mov ax, 0
+        mov al, byte[PontuacaoComputadordezena] 
+        add al,30h                       
+        mov [PontuacaoComputadordezenastr],al
+        mov     cx,1		;numero de caracteres
+        mov     bx,0
+        mov     dh,2			;linha 0-29
+        mov     dl,24			;coluna 0-79
+        mov	   byte[cor], magenta
+        call escrevepontoscompdezena
+        cmp word[PontuacaoComputadordezena], 10
+        jz teste_pracabarluca
         call continua
 
 escrevevelocidade:
@@ -946,6 +1003,10 @@ PontuacaoLuca           dw      0
 PontuacaoComputador     dw      0
 PontuacaoComputadorstr db '0'
 PontuacaoLucastr db '0'
+PontuacaoLucadezena         dw      0
+PontuacaoComputadordezena     dw      0
+PontuacaoComputadordezenastr db '0'
+PontuacaoLucadezenastr db '0'
 velocidadestr db '1'
 velocidade      dw      1
 tempo           dw      1
